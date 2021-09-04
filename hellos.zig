@@ -35,16 +35,17 @@ pub fn panic(msg: []const u8, error_return_trace: ?*builtin.StackTrace) noreturn
 
 fn kmain() void {
     terminal.initialize();
-    terminal.writeLn("Hello, Kernel World from Zig 0.8.0!");
-    terminal.writeLn("This is a second line!");
-    terminal.writeLn("1");
-    terminal.writeLn("2");
-    terminal.writeLn("3");
-    terminal.writeLn("4");
-    terminal.writeLn("5");
-    terminal.writeLn("6");
-    terminal.writeLn("7");
-    terminal.scroll();
+    terminal.writeLn("Kernel started");
+    var a: usize = 1;
+    var protected_mode: usize = asm volatile (
+        \\ mov %%cr0, %[ret]
+        : [ret] "=r" (-> usize)
+    );
+    if (protected_mode & 1 == 1) {
+        terminal.writeLn("Protected mode on.");
+    } else {
+        terminal.writeLn("Protected mode off.");
+    }
 }
 
 // Hardware text mode color constants
@@ -85,7 +86,8 @@ const terminal = struct {
 
     var color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 
-    const buffer = @intToPtr([*]volatile u16, 0xB8000);
+    // TODO: use (volatile?) [VGA_HEIGHT][VGA_WIDTH]u16 instead of unknown
+    const buffer = @intToPtr([*]volatile [VGA_WIDTH]u16, 0xB8000);
 
     fn initialize() void {
         var y: usize = 0;
@@ -101,20 +103,29 @@ const terminal = struct {
         color = new_color;
     }
 
+    fn advance() void {
+        column += 1;
+        if (column == VGA_WIDTH) {
+            advance_line();
+        }
+    }
+
+    fn advance_line() void {
+        column = 0;
+        row += 1;
+        if (row == VGA_HEIGHT) {
+            scroll();
+            row -= 1;
+        }
+    }
+
     fn putCharAt(c: u8, new_color: u8, x: usize, y: usize) void {
-        const index = y * VGA_WIDTH + x;
-        buffer[index] = vga_entry(c, new_color);
+        buffer[y][x] = vga_entry(c, new_color);
     }
 
     fn putChar(c: u8) void {
         putCharAt(c, color, column, row);
-        column += 1;
-        if (column == VGA_WIDTH) {
-            column = 0;
-            row += 1;
-            if (row == VGA_HEIGHT)
-                row = 0;
-        }
+        advance();
     }
 
     fn write(data: []const u8) void {
@@ -124,29 +135,28 @@ const terminal = struct {
 
     fn writeLn(data: []const u8) void {
         write(data);
-        row += 1;
-        column = 0;
+        advance_line();
     }
 
     fn copyLineFromTo(lineSrc: usize, lineDest: usize) void {
         var i: usize = 0;
         while (i < VGA_WIDTH) : (i += 1) {
-            buffer[VGA_WIDTH * lineDest + i] = buffer[VGA_WIDTH * lineSrc + i];
+            buffer[lineDest][i] = buffer[lineSrc][i];
         }
     }
 
     fn deleteLine(line: usize) void {
         var i: usize = 0;
         while (i < VGA_WIDTH) : (i += 1) {
-            buffer[VGA_WIDTH * line + i] = 0;
+            buffer[line][i] = 0;
         }
     }
 
     fn scroll() void {
         var i: usize = 1;
-        while (i < VGA_HEIGHT - 1) : (i += 1) {
+        while (i < VGA_HEIGHT) : (i += 1) {
             copyLineFromTo(i, i - 1);
         }
-        deleteLine(i);
+        deleteLine(VGA_HEIGHT - 1);
     }
 };
