@@ -1,4 +1,10 @@
-const builtin = @import("std").builtin;
+const std = @import("std");
+const builtin = std.builtin;
+const terminal = @import("terminal.zig");
+const serial = @import("serial.zig");
+const itoa = @cImport({
+    @cInclude("mytoa.h");
+});
 
 const MultiBoot = packed struct {
     magic: i32,
@@ -11,7 +17,8 @@ const MEMINFO = 1 << 1;
 const MAGIC = 0x1BADB002;
 const FLAGS = ALIGN | MEMINFO;
 
-export var multiboot align(4) linksection(".multiboot") = MultiBoot{
+// must be placed at the beginning of the binary
+export const multiboot align(4) linksection(".multiboot") = MultiBoot{
     .magic = MAGIC,
     .flags = FLAGS,
     .checksum = -(MAGIC + FLAGS),
@@ -33,130 +40,53 @@ pub fn panic(msg: []const u8, error_return_trace: ?*builtin.StackTrace) noreturn
     while (true) {}
 }
 
+// var print_buf: [100]u8 = undefined;
+fn print(comptime fmt: []const u8, args: anytype) void {
+    // var x: []u8 = std.fmt.bufPrint(&stack_bytes, fmt, args) catch |_| {
+    //     panic("print() buffer ran out of memory", null);
+    // };
+    terminal.writeLn(fmt);
+}
+
 fn kmain() void {
     terminal.initialize();
     terminal.writeLn("Kernel started");
-    var a: usize = 1;
-    var protected_mode: usize = asm volatile (
-        \\ mov %%cr0, %[ret]
-        : [ret] "=r" (-> usize)
-    );
-    if (protected_mode & 1 == 1) {
-        terminal.writeLn("Protected mode on.");
-    } else {
-        terminal.writeLn("Protected mode off.");
-    }
+
+    // var serial_port = serial.get_serial() catch |err| {
+    //     @panic("Failed to get serial port address");
+    // };
+    // print("Serial port location: {x}", .{@ptrToInt(serial_port)});
+    //
+    //locations:
+    //stack: 0x108000
+    //print_buf: 0x10c000
+    //print_buf2: 0x10c064
+    //
+    //locations2:
+    //stack:0x107000 top:0x10b000
+    //print_buf:0x10b144
+
+    // print("0x{x}", .{stack_bytes_slice.len + @ptrToInt(&stack_bytes_slice)});
+    // print("{}", .{@ptrToInt(&stack_bytes) == @ptrToInt(&stack_bytes_slice)});
+    // print("{}", .{@frameAddress()});
+
+    // print("{}", .{1});
+
+    var s: [5]u8 = undefined;
+    itoa.intToCStr(5, &s);
+    terminal.writeLn(s);
+    terminal.writeLn("done");
+
+    serial.initialize() catch |err| switch (err) {
+        error.MissingPort => @panic("No serial port"),
+        error.FaultyPort => @panic("Serial port is faulty"),
+    };
+
+    serial.write('a');
+    serial.write('b');
+    serial.write('c');
+
+    terminal.writeLn("Serial port written");
+
+    while (true) {}
 }
-
-// Hardware text mode color constants
-const VgaColor = u8;
-const VGA_COLOR_BLACK = 0;
-const VGA_COLOR_BLUE = 1;
-const VGA_COLOR_GREEN = 2;
-const VGA_COLOR_CYAN = 3;
-const VGA_COLOR_RED = 4;
-const VGA_COLOR_MAGENTA = 5;
-const VGA_COLOR_BROWN = 6;
-const VGA_COLOR_LIGHT_GREY = 7;
-const VGA_COLOR_DARK_GREY = 8;
-const VGA_COLOR_LIGHT_BLUE = 9;
-const VGA_COLOR_LIGHT_GREEN = 10;
-const VGA_COLOR_LIGHT_CYAN = 11;
-const VGA_COLOR_LIGHT_RED = 12;
-const VGA_COLOR_LIGHT_MAGENTA = 13;
-const VGA_COLOR_LIGHT_BROWN = 14;
-const VGA_COLOR_WHITE = 15;
-
-fn vga_entry_color(fg: VgaColor, bg: VgaColor) u8 {
-    return fg | (bg << 4);
-}
-
-fn vga_entry(uc: u8, color: u8) u16 {
-    var c: u16 = color;
-
-    return uc | (c << 8);
-}
-
-const VGA_WIDTH = 80;
-const VGA_HEIGHT = 25;
-
-const terminal = struct {
-    var row: usize = 0;
-    var column: usize = 0;
-
-    var color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
-
-    // TODO: use (volatile?) [VGA_HEIGHT][VGA_WIDTH]u16 instead of unknown
-    const buffer = @intToPtr([*]volatile [VGA_WIDTH]u16, 0xB8000);
-
-    fn initialize() void {
-        var y: usize = 0;
-        while (y < VGA_HEIGHT) : (y += 1) {
-            var x: usize = 0;
-            while (x < VGA_WIDTH) : (x += 1) {
-                putCharAt(' ', color, x, y);
-            }
-        }
-    }
-
-    fn setColor(new_color: u8) void {
-        color = new_color;
-    }
-
-    fn advance() void {
-        column += 1;
-        if (column == VGA_WIDTH) {
-            advance_line();
-        }
-    }
-
-    fn advance_line() void {
-        column = 0;
-        row += 1;
-        if (row == VGA_HEIGHT) {
-            scroll();
-            row -= 1;
-        }
-    }
-
-    fn putCharAt(c: u8, new_color: u8, x: usize, y: usize) void {
-        buffer[y][x] = vga_entry(c, new_color);
-    }
-
-    fn putChar(c: u8) void {
-        putCharAt(c, color, column, row);
-        advance();
-    }
-
-    fn write(data: []const u8) void {
-        for (data) |c|
-            putChar(c);
-    }
-
-    fn writeLn(data: []const u8) void {
-        write(data);
-        advance_line();
-    }
-
-    fn copyLineFromTo(lineSrc: usize, lineDest: usize) void {
-        var i: usize = 0;
-        while (i < VGA_WIDTH) : (i += 1) {
-            buffer[lineDest][i] = buffer[lineSrc][i];
-        }
-    }
-
-    fn deleteLine(line: usize) void {
-        var i: usize = 0;
-        while (i < VGA_WIDTH) : (i += 1) {
-            buffer[line][i] = 0;
-        }
-    }
-
-    fn scroll() void {
-        var i: usize = 1;
-        while (i < VGA_HEIGHT) : (i += 1) {
-            copyLineFromTo(i, i - 1);
-        }
-        deleteLine(VGA_HEIGHT - 1);
-    }
-};
