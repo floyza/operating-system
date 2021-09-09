@@ -2,9 +2,10 @@ const std = @import("std");
 const builtin = std.builtin;
 const terminal = @import("terminal.zig");
 const serial = @import("serial.zig");
-const itoa = @cImport({
-    @cInclude("mytoa.h");
-});
+// const itoa = @cImport({
+//     @cInclude("mytoa.h");
+// });
+const itoa = @import("mytoa.zig");
 
 const MultiBoot = packed struct {
     magic: i32,
@@ -72,10 +73,10 @@ fn kmain() void {
 
     // print("{}", .{1});
 
-    var s: [5]u8 = undefined;
-    itoa.intToCStr(5, &s);
-    terminal.writeLn(s);
-    terminal.writeLn("done");
+    var s: [1]u8 = undefined;
+    // var res = itoa.uintToStr(4, &s);
+    // var res = itoa.uintToStr(@frameAddress(), &s);
+    // terminal.writeLn(res[0..]);
 
     serial.initialize() catch |err| switch (err) {
         error.MissingPort => @panic("No serial port"),
