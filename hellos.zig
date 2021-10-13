@@ -2,9 +2,6 @@ const std = @import("std");
 const builtin = std.builtin;
 const terminal = @import("terminal.zig");
 const serial = @import("serial.zig");
-// const itoa = @cImport({
-//     @cInclude("mytoa.h");
-// });
 const itoa = @import("mytoa.zig");
 
 const MultiBoot = packed struct {
@@ -32,11 +29,10 @@ pub fn panic(msg: []const u8, error_return_trace: ?*builtin.StackTrace) noreturn
     while (true) {}
 }
 
-// var print_buf: [100]u8 = undefined;
-fn print(comptime fmt: []const u8, args: anytype) void {
-    // var x: []u8 = std.fmt.bufPrint(&stack_bytes, fmt, args) catch |_| {
-    //     panic("print() buffer ran out of memory", null);
-    // };
+fn print(buf: []u8, comptime fmt: []const u8, args: anytype) void {
+    var x: []u8 = std.fmt.bufPrint(&stack_bytes, fmt, args) catch |_| {
+        panic("print() buffer ran out of memory", null);
+    };
     terminal.writeLn(fmt);
 }
 
