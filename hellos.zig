@@ -25,15 +25,6 @@ export const multiboot align(4) linksection(".multiboot") = MultiBoot{
     .checksum = -(MAGIC + FLAGS),
 };
 
-export var stack_bytes: [16 * 1024]u8 align(16) linksection(".bss") = undefined;
-const stack_bytes_slice = stack_bytes[0..];
-
-export fn _start() callconv(.Naked) noreturn {
-    @call(.{ .stack = stack_bytes_slice }, kmain, .{});
-
-    while (true) {}
-}
-
 pub fn panic(msg: []const u8, error_return_trace: ?*builtin.StackTrace) noreturn {
     @setCold(true);
     terminal.write("KERNEL PANIC: ");
@@ -49,7 +40,7 @@ fn print(comptime fmt: []const u8, args: anytype) void {
     terminal.writeLn(fmt);
 }
 
-fn kmain() void {
+export fn kmain() void {
     terminal.initialize();
     terminal.writeLn("Kernel started");
 
@@ -73,10 +64,9 @@ fn kmain() void {
 
     // print("{}", .{1});
 
-    var s: [1]u8 = undefined;
-    // var res = itoa.uintToStr(4, &s);
-    // var res = itoa.uintToStr(@frameAddress(), &s);
-    // terminal.writeLn(res[0..]);
+    var s: [3]u8 = undefined;
+    var res = itoa.uintToStr(4, &s);
+    terminal.writeLn(res[0..]);
 
     serial.initialize() catch |err| switch (err) {
         error.MissingPort => @panic("No serial port"),

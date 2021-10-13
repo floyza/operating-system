@@ -12,10 +12,7 @@ pub fn build(b: *Builder) void {
     const mode = b.standardReleaseOptions();
 
     const exe = b.addExecutable("os", "hellos.zig");
-    exe.addCSourceFile("mytoa.c", &[_][]const u8{
-        "-Wall",
-    });
-    exe.addIncludeDir(".");
+    exe.addAssemblyFile("_start.s");
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.setLinkerScriptPath("linker.ld");

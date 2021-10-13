@@ -1,7 +1,7 @@
 ENTRY(_start)
  
 SECTIONS {
-	. = 1M;
+	. = 0x100000;
  
 	.text : ALIGN(4K) {
 		KEEP(*(.multiboot))
@@ -17,7 +17,7 @@ SECTIONS {
 	}
  
 	.bss : ALIGN(4K) {
-		*(COMMON)
 		*(.bss)
+		*(COMMON)
 	}
 }
