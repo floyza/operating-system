@@ -1,16 +1,5 @@
 const native_endian = @import("builtin").target.cpu.arch.endian();
-
-const SerialPort = packed struct {
-    // when DLAB=1, data+interupt_enable is a u16 for setting baud rate
-    data: u8,
-    interupt_enable: u8,
-    inter_id_fifo_control: u8,
-    line_ctrl: u8,
-    modem_ctrl: u8,
-    line_status: u8, // msb is DLAB
-    modem_status: u8,
-    scratch: u8,
-};
+usingnamespace @import("io.zig");
 
 const SerialError = error{
     MissingPort,
@@ -18,58 +7,55 @@ const SerialError = error{
 };
 
 // returns first serial port avaliable
-pub fn get_serial() SerialError!*volatile SerialPort {
+pub fn get_serial_bios() SerialError!u16 {
     const bios_data_serial = @intToPtr([*]volatile u16, 0x0400);
     var i: u8 = 0;
     while (i < 4) : (i += 1) {
         if (bios_data_serial[i] != 0)
-            return @intToPtr(*volatile SerialPort, bios_data_serial[i]);
+            return bios_data_serial[i];
     }
     return SerialError.MissingPort;
 }
 
-var active_serial: *volatile SerialPort = undefined;
+const active_serial: u16 = 0x3F8;
 
-pub fn initialize() !void {
+pub fn initialize() SerialError!void {
     if (native_endian == .Big) {
         // we do not support big endian
         @compileError("big endian not supported for serial communication");
     }
-    // active_serial = try get_serial();
-    active_serial = @intToPtr(*volatile SerialPort, 0x3F8);
+    // active_serial = try get_serial_bios();
 
-    active_serial.interupt_enable = 0x00; // Disable interupts
+    outb(active_serial + 1, 0x00); // Disable interupts
 
-    active_serial.line_ctrl |= 0x1 << 7; // enable dlab
-    active_serial.data = 0x03; // set divisor to 3 (lo byte) 38400 baud
-    active_serial.interupt_enable = 0x00; //       (hi byte)
-    active_serial.line_ctrl ^= 0x1 << 7; // disable dlab
-
-    active_serial.line_ctrl |= 0b10; // 8 data bits
-    active_serial.line_ctrl &= ~@intCast(u8, 0x1 << 6); // 1 stop bit
-    active_serial.line_ctrl &= ~@intCast(u8, 0x1 << 5); // no parity
+    outb(active_serial + 3, 0x1 << 7); // enable dlab (set baud rate divisor)
+    outb(active_serial + 0, 0x03); // set divisor to 3 (lo byte) 38400 baud
+    outb(active_serial + 1, 0x00); //                  (hi byte)
+    outb(active_serial + 3, 0x03); // disable dlab, set 8 bits, no parity, one stop bit
 
     // Test serial port
-    active_serial.modem_ctrl = 0x1E; // loopback mode
-    active_serial.data = 0xAE;
-    if (active_serial.data != 0xAE) {
+    outb(active_serial + 2, 0xC7); // Enable FIFO, clear them, with 14-byte threshold
+    outb(active_serial + 4, 0x0B); // IRQs enabled, RTS/DSR set
+    outb(active_serial + 4, 0x1E); // loopback mode
+    outb(active_serial + 0, 0xAE);
+    if (inb(active_serial + 0) != 0xAE) {
         return SerialError.FaultyPort;
     }
     // Set it back to normal operation:
     // (loopback disabled, IRQS enabled, OUT#1 and OUT#2 bits enabled)
-    active_serial.modem_ctrl = 0x0F;
+    outb(active_serial + 4, 0x0F);
 }
 
 pub fn read() u8 {
-    while (active_serial.line_status & 1 == 0) {
+    while ((inb(active_serial + 5) & 1) == 0) {
         // wait
     }
-    return active_serial.data;
+    return inb(active_serial + 0);
 }
 
 pub fn write(c: u8) void {
-    while (active_serial.line_status & 0x20 == 0) {
-        // wait
+    while ((inb(active_serial + 5) & (1 << 5)) == 0) {
+        // wait until Transmitter holding register empty (THRE) is set so data can be sent
     }
-    active_serial.data = c;
+    outb(active_serial + 0, c);
 }
