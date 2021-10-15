@@ -2,7 +2,6 @@ const std = @import("std");
 const builtin = std.builtin;
 const terminal = @import("terminal.zig");
 const serial = @import("serial.zig");
-const itoa = @import("mytoa.zig");
 
 const MultiBoot = packed struct {
     magic: i32,
@@ -39,30 +38,6 @@ fn print(buf: []u8, comptime fmt: []const u8, args: anytype) void {
 export fn kmain() void {
     terminal.initialize();
     terminal.writeLn("Kernel started");
-
-    // var serial_port = serial.get_serial() catch |err| {
-    //     @panic("Failed to get serial port address");
-    // };
-    // print("Serial port location: {x}", .{@ptrToInt(serial_port)});
-    //
-    //locations:
-    //stack: 0x108000
-    //print_buf: 0x10c000
-    //print_buf2: 0x10c064
-    //
-    //locations2:
-    //stack:0x107000 top:0x10b000
-    //print_buf:0x10b144
-
-    // print("0x{x}", .{stack_bytes_slice.len + @ptrToInt(&stack_bytes_slice)});
-    // print("{}", .{@ptrToInt(&stack_bytes) == @ptrToInt(&stack_bytes_slice)});
-    // print("{}", .{@frameAddress()});
-
-    // print("{}", .{1});
-
-    var s: [3]u8 = undefined;
-    var res = itoa.uintToStr(4, &s);
-    terminal.writeLn(res[0..]);
 
     serial.initialize() catch |err| switch (err) {
         error.MissingPort => @panic("No serial port"),
