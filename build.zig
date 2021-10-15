@@ -12,7 +12,6 @@ pub fn build(b: *Builder) void {
     const mode = b.standardReleaseOptions();
 
     const kernel = b.addExecutable("os", "kernel.zig");
-    kernel.addAssemblyFile("_start.s");
     kernel.setTarget(target);
     kernel.setBuildMode(mode);
     kernel.setLinkerScriptPath("linker.ld");

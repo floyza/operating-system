@@ -36,7 +36,7 @@ var column: usize = 0;
 var color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 
 // TODO: use (volatile?) [VGA_HEIGHT][VGA_WIDTH]u16 instead of unknown
-const buffer = @intToPtr([*]volatile [VGA_WIDTH]u16, 0xB8000);
+const buffer = @intToPtr([*]volatile [VGA_WIDTH]u16, 0xC03FF000);
 
 pub fn initialize() void {
     var y: usize = 0;
