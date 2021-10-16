@@ -16,6 +16,7 @@ SECTIONS {
 	. += 0xC0000000;
  
 	.text ALIGN(4K) : AT (ADDR (.text) - 0xC0000000) {
+		KEEP(*(.multiboot.data))
 		*(.text)
 	}
  
