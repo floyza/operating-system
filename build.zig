@@ -19,6 +19,11 @@ pub fn build(b: *Builder) void {
     kernel.setOutputDir("kernel");
     kernel.install();
 
+    var tests = b.addTest("test.zig");
+
+    const test_step = b.step("test", "Run all tests");
+    test_step.dependOn(&tests.step);
+
     const common_params = [_][]const u8{ "qemu-system-i386", "-kernel", kernel.getOutputPath() };
     const verbose_params = [_][]const u8{ "-d", "int,cpu_reset" };
     const debug_params = [_][]const u8{ "-s", "-S" };
