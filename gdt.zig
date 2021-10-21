@@ -92,7 +92,7 @@ const GDTLoader = packed struct {
 };
 
 fn load_gdt() void {
-    var combined: GDTLoader = .{ .base_addr = &GDT[0], .limit = @sizeOf(@TypeOf(GDT)) };
+    var combined: GDTLoader = .{ .base_addr = &GDT[0], .limit = @sizeOf(@TypeOf(GDT)) - 1 };
     asm volatile ("lgdt (%[val])"
         :
         : [val] "{eax}" (&combined)
