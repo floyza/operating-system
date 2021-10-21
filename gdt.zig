@@ -1,6 +1,6 @@
 const assert = @import("std").debug.assert;
 
-pub var GDT align(4) = [_]GDTSegmentDesc{
+pub var GDT align(8) = [_]GDTSegmentDesc{
     .{ .present = 1 },
     make_segment(0, 0xffffffff, EXECUTABLE),
     make_segment(0, 0xffffffff, DATA),
