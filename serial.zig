@@ -46,16 +46,28 @@ pub fn initialize() SerialError!void {
     outb(active_serial + 4, 0x0F);
 }
 
-pub fn read() u8 {
+pub fn get() u8 {
     while ((inb(active_serial + 5) & 1) == 0) {
         // wait
     }
     return inb(active_serial + 0);
 }
 
-pub fn write(c: u8) void {
+pub fn put(c: u8) void {
     while ((inb(active_serial + 5) & (1 << 5)) == 0) {
         // wait until Transmitter holding register empty (THRE) is set so data can be sent
     }
     outb(active_serial + 0, c);
+}
+
+pub fn write(data: []const u8) void {
+    for (data) |c| {
+        put(c);
+    }
+}
+
+pub fn write_ln(data: []const u8) void {
+    write(data);
+    put('\r');
+    put('\n');
 }

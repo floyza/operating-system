@@ -29,9 +29,14 @@ export fn kmain() void {
         error.FaultyPort => @panic("Serial port is faulty"),
     };
 
-    serial.write('a');
-    serial.write('b');
-    serial.write('c');
+    serial.put('H');
+    serial.put('i');
+    serial.put('\r');
+    serial.put('\n');
+    serial.put('w');
+    serial.put('r');
+    serial.put('d');
+    serial.put('!');
 
     // terminal.writeLn("Serial port written");
 
