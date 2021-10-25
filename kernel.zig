@@ -3,11 +3,13 @@ const builtin = std.builtin;
 const terminal = @import("terminal.zig");
 const serial = @import("serial.zig");
 const gdt = @import("gdt.zig");
+const idt = @import("idt.zig");
 
 pub fn panic(msg: []const u8, error_return_trace: ?*builtin.StackTrace) noreturn {
     @setCold(true);
-    terminal.write("KERNEL PANIC: ");
-    terminal.write(msg);
+    serial.put('~');
+    // terminal.write("KERNEL PANIC: ");
+    // terminal.write(msg);
     while (true) {}
 }
 
@@ -20,6 +22,7 @@ fn print(buf: []u8, comptime fmt: []const u8, args: anytype) void {
 
 export fn kmain() void {
     gdt.initialize();
+    idt.initialize();
 
     // terminal.initialize();
     // terminal.writeLn("Kernel started");
