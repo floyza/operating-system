@@ -7,3 +7,6 @@ out/
 zig-cache/
 zig-out/
 .ccls-cache/
+
+disassemble.bin
+serial.txt
