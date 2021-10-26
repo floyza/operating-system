@@ -24,7 +24,7 @@ pub fn build(b: *Builder) void {
     const test_step = b.step("test", "Run all tests");
     test_step.dependOn(&tests.step);
 
-    const common_params = [_][]const u8{ "qemu-system-i386", "-kernel", kernel.getOutputPath() };
+    const common_params = [_][]const u8{ "qemu-system-i386", "-kernel", kernel.getOutputPath(), "-serial", "file:serial.txt" };
     const verbose_params = [_][]const u8{ "-d", "int,cpu_reset" };
     const debug_params = [_][]const u8{ "-s", "-S" };
 
