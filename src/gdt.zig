@@ -1,6 +1,6 @@
 const assert = @import("std").debug.assert;
 
-pub var GDT align(8) = [_]GDTSegmentDesc{
+pub var GDT align(8) = [_]GDTEntry{
     .{ .present = 1 },
     make_segment(0, 0xffffffff, EXECUTABLE),
     make_segment(0, 0xffffffff, DATA),
@@ -12,7 +12,7 @@ const EXECUTABLE: u32 = 1 << 1;
 const DATA: u32 = 1 << 2;
 const SYSTEM: u32 = 1 << 3;
 
-pub const GDTSegmentDesc = packed struct {
+pub const GDTEntry = packed struct {
     limit_low: u16 = 0,
     base_low: u24 = 0,
     accessed: u1 = 0,
@@ -29,24 +29,24 @@ pub const GDTSegmentDesc = packed struct {
     page_granularity: u1 = 0, // if set, limit determines number of 4k pages instead of bytes
     base_high: u8 = 0,
 
-    pub fn set_limit(self: *GDTSegmentDesc, limit: u20) void {
+    pub fn set_limit(self: *GDTEntry, limit: u20) void {
         self.limit_low = @truncate(u16, limit);
         self.limit_high = @truncate(u4, limit >> 16);
     }
 
-    pub fn get_limit(self: GDTSegmentDesc) u20 {
+    pub fn get_limit(self: GDTEntry) u20 {
         var limit: u20 = self.limit_high;
         limit <<= 16;
         limit |= self.limit_low;
         return limit;
     }
 
-    pub fn set_base(self: *GDTSegmentDesc, base: u32) void {
+    pub fn set_base(self: *GDTEntry, base: u32) void {
         self.base_low = @truncate(u24, base);
         self.base_high = @truncate(u8, base >> 24);
     }
 
-    pub fn get_base(self: GDTSegmentDesc) u32 {
+    pub fn get_base(self: GDTEntry) u32 {
         var base: u32 = self.base_high;
         base <<= 24;
         base |= self.base_low;
@@ -54,8 +54,8 @@ pub const GDTSegmentDesc = packed struct {
     }
 };
 
-pub fn make_segment(base: u32, limit: u32, flags: u32) GDTSegmentDesc {
-    var seg: GDTSegmentDesc = .{ .size = 1, .read_write = 1, .privilege_level = 0, .present = 1 };
+pub fn make_segment(base: u32, limit: u32, flags: u32) GDTEntry {
+    var seg: GDTEntry = .{ .size = 1, .read_write = 1, .privilege_level = 0, .present = 1 };
     seg.set_base(base);
     if (limit <= 0xfffff) {
         seg.set_limit(@truncate(u20, limit));
@@ -79,7 +79,7 @@ pub fn make_segment(base: u32, limit: u32, flags: u32) GDTSegmentDesc {
 }
 
 comptime {
-    assert(@bitSizeOf(GDTSegmentDesc) == 64);
+    assert(@bitSizeOf(GDTEntry) == 64);
 }
 
 pub fn initialize() void {
@@ -88,7 +88,7 @@ pub fn initialize() void {
 
 const GDTLoader = packed struct {
     limit: u16,
-    base_addr: *GDTSegmentDesc,
+    base_addr: *GDTEntry,
 };
 
 fn load_gdt() void {
