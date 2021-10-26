@@ -79,6 +79,16 @@ paged:
 
   movl $stack_top, %esp // setup stack
 
+  // enable SSE (https://wiki.osdev.org/SSE)
+  // TODO: check for SSE support with cpuid before enabling it
+  movl %cr0, %eax
+  andw $(~(1 << 2)), %ax   //clear coprocessor emulation CR0.EM
+  orw $(1 << 1), %ax   //set coprocessor monitoring  CR0.MP
+  movl %eax, %cr0
+  movl %cr4, %eax
+  orw $(3 << 9), %ax  //set CR4.OSFXSR (1 << 9) and CR4.OSXMMEXCPT (1 << 10) at the same time
+  movl %eax, %cr4
+
   call kmain
 
   cli
