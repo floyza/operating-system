@@ -16,6 +16,6 @@ pub fn printk_ln(comptime fmt: []const u8, args: anytype) void {
     const str: []u8 = std.fmt.bufPrint(&buf, fmt, args) catch |_| {
         @panic("print() buffer ran out of memory");
     };
-    terminal.writeLn(str);
+    terminal.write_ln(str);
     serial.write_ln(str);
 }

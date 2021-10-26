@@ -43,12 +43,12 @@ pub fn initialize() void {
     while (y < VGA_HEIGHT) : (y += 1) {
         var x: usize = 0;
         while (x < VGA_WIDTH) : (x += 1) {
-            putCharAt(' ', color, x, y);
+            put_char_at(' ', color, x, y);
         }
     }
 }
 
-pub fn setColor(new_color: u8) void {
+pub fn set_color(new_color: u8) void {
     color = new_color;
 }
 
@@ -68,33 +68,33 @@ pub fn advance_line() void {
     }
 }
 
-pub fn putCharAt(c: u8, new_color: u8, x: usize, y: usize) void {
+pub fn put_char_at(c: u8, new_color: u8, x: usize, y: usize) void {
     buffer[y][x] = vga_entry(c, new_color);
 }
 
-pub fn putChar(c: u8) void {
-    putCharAt(c, color, column, row);
+pub fn put_char(c: u8) void {
+    put_char_at(c, color, column, row);
     advance();
 }
 
 pub fn write(data: []const u8) void {
     for (data) |c|
-        putChar(c);
+        put_char(c);
 }
 
-pub fn writeLn(data: []const u8) void {
+pub fn write_ln(data: []const u8) void {
     write(data);
     advance_line();
 }
 
-pub fn copyLineFromTo(lineSrc: usize, lineDest: usize) void {
+pub fn copy_line_from_to(line_src: usize, line_dest: usize) void {
     var i: usize = 0;
     while (i < VGA_WIDTH) : (i += 1) {
-        buffer[lineDest][i] = buffer[lineSrc][i];
+        buffer[line_dest][i] = buffer[line_src][i];
     }
 }
 
-pub fn deleteLine(line: usize) void {
+pub fn delete_line(line: usize) void {
     var i: usize = 0;
     while (i < VGA_WIDTH) : (i += 1) {
         buffer[line][i] = 0;
@@ -104,7 +104,7 @@ pub fn deleteLine(line: usize) void {
 pub fn scroll() void {
     var i: usize = 1;
     while (i < VGA_HEIGHT) : (i += 1) {
-        copyLineFromTo(i, i - 1);
+        copy_line_from_to(i, i - 1);
     }
-    deleteLine(VGA_HEIGHT - 1);
+    delete_line(VGA_HEIGHT - 1);
 }
