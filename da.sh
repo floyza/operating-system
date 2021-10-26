@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-objdump --disassemble-all kernel/os > disassemble
+objdump --disassemble-all out/os > disassemble.bin

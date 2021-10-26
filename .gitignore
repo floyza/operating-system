@@ -3,7 +3,7 @@
 *.log
 tmp/
 
-kernel/
+out/
 zig-cache/
 zig-out/
 .ccls-cache/

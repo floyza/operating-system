@@ -11,15 +11,15 @@ pub fn build(b: *Builder) void {
 
     const mode = b.standardReleaseOptions();
 
-    const kernel = b.addExecutable("os", "kernel.zig");
-    kernel.addAssemblyFile("boot.s");
+    const kernel = b.addExecutable("os", "src/kernel.zig");
+    kernel.addAssemblyFile("src/boot.s");
     kernel.setTarget(target);
     kernel.setBuildMode(mode);
-    kernel.setLinkerScriptPath("linker.ld");
-    kernel.setOutputDir("kernel");
+    kernel.setLinkerScriptPath("src/linker.ld");
+    kernel.setOutputDir("out");
     kernel.install();
 
-    var tests = b.addTest("test.zig");
+    var tests = b.addTest("src/test.zig");
 
     const test_step = b.step("test", "Run all tests");
     test_step.dependOn(&tests.step);

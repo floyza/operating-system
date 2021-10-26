@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-gdb -s kernel/os -ex 'target remote localhost:1234'
+gdb -s out/os -ex 'target remote localhost:1234'
