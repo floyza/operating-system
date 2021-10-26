@@ -18,7 +18,7 @@ const Interrupt = struct {
 pub const IDTEntry = packed struct {
     offset_low: u16,
     segment_selector: u16,
-    zero: u8,
+    zero: u8 = 0,
     flags: u5, // 0b00101 for task gate, 0b01110 for interrupt gate, 0b01111 for trap gate
     privilege_level: u2,
     present: u1,
@@ -27,12 +27,12 @@ pub const IDTEntry = packed struct {
 
 pub fn set_interrupt_gate(index: usize, handler: handlers.handler) void {
     const offset: u32 = @ptrToInt(handler);
-    IDT[index] = IDTEntry{ .offset_low = @truncate(u16, offset), .segment_selector = 0x8, .zero = 0, .flags = 0b01110, .privilege_level = 0, .present = 1, .offset_high = @truncate(u16, offset >> 16) };
+    IDT[index] = IDTEntry{ .offset_low = @truncate(u16, offset), .segment_selector = 0x8, .flags = 0b01110, .privilege_level = 0, .present = 1, .offset_high = @truncate(u16, offset >> 16) };
 }
 
 pub fn set_trap_gate(index: usize, handler: handlers.handler) void {
     const offset: u32 = @ptrToInt(u32, handler);
-    IDT[index] = IDTEntry{ .offset_low = @truncate(u16, offset), .segment_selector = 0x8, .zero = 0, .flags = 0b01111, .privilege_level = 0, .present = 1, .offset_high = @truncate(u16, offset >> 16) };
+    IDT[index] = IDTEntry{ .offset_low = @truncate(u16, offset), .segment_selector = 0x8, .flags = 0b01111, .privilege_level = 0, .present = 1, .offset_high = @truncate(u16, offset >> 16) };
 }
 
 comptime {
