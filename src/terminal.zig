@@ -1,3 +1,5 @@
+usingnamespace @import("io.zig");
+
 // Hardware text mode color constants
 const VgaColor = u8;
 const VGA_COLOR_BLACK = 0;
@@ -30,8 +32,8 @@ fn vga_entry(uc: u8, vga_color: u8) u16 {
 const VGA_WIDTH = 80;
 const VGA_HEIGHT = 25;
 
-var row: usize = 0;
-var column: usize = 0;
+var row: u16 = 0;
+var column: u16 = 0;
 
 var color = vga_entry_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
 
@@ -46,6 +48,37 @@ pub fn initialize() void {
             put_char_at(' ', color, x, y);
         }
     }
+    enable_cursor(13, 14);
+    row = 0;
+    column = 0;
+    set_cursor(0, 0);
+}
+
+pub fn enable_cursor(cursor_start: u8, cursor_end: u8) void {
+    outb(0x3D4, 0x0A);
+    outb(0x3D5, (inb(0x3D5) & 0xC0) | cursor_start);
+
+    outb(0x3D4, 0x0B);
+    outb(0x3D5, (inb(0x3D5) & 0xE0) | cursor_end);
+}
+
+pub fn disable_cursor() void {
+    outb(0x3D4, 0x0A);
+    outb(0x3D5, 0x20);
+}
+
+pub fn set_cursor(x: u16, y: u16) void {
+    const pos: u16 = y * VGA_WIDTH + x;
+
+    outb(0x3D4, 0x0F);
+    outb(0x3D5, @truncate(u8, pos));
+
+    outb(0x3D4, 0x0E);
+    outb(0x3D5, @truncate(u8, pos >> 8));
+}
+
+pub fn update_cursor() void {
+    set_cursor(column, row);
 }
 
 pub fn set_color(new_color: u8) void {
@@ -80,11 +113,13 @@ pub fn put_char(c: u8) void {
 pub fn write(data: []const u8) void {
     for (data) |c|
         put_char(c);
+    update_cursor();
 }
 
 pub fn write_ln(data: []const u8) void {
     write(data);
     advance_line();
+    update_cursor();
 }
 
 pub fn copy_line_from_to(line_src: usize, line_dest: usize) void {
