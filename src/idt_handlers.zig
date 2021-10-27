@@ -8,6 +8,11 @@ fn generic_handle(name: []const u8) noreturn {
     @panic("Interrupt");
 }
 
+// FIXME: Exceptions push an error code onto the stack,
+// and we completely ignore it, leaving the error code there.
+// This is not currently a problem, since we panic instead of
+// returning, but will need to fixed.
+
 pub fn handle0() callconv(.Interrupt) void {
     generic_handle("0");
 }
